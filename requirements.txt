@@ -1,0 +1,5 @@
+scapy
+flask
+colorama
+tabulate
+pytest

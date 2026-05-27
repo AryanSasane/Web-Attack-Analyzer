@@ -1,0 +1,69 @@
+SQL.PY
+#Websites store data in databases and use SQL queries to fetch it. SQLi is when an attacker injects their own SQL code into those queries.
+#import regex lib to search for attack patterns in the text
+
+# each pattern describes an SQL Injection attack
+# (?i) means case-insensitive
+# \s+ means one or more whitespace characters
+
+    r"(?i)(union\s+select)",    #detects UNION SELECT (used extract data from other tables)
+    r"(?i)(or\s+'1'='1)",       #detects the classic login bypass (' OR '1'='1)
+    r"(?i)(drop\s+table)",      #detects attempts to delete a table
+    r"(?i)(sleep\s*\(\d+\))",   #detects time-based blind SQLi like sleep(5)
+
+# detection fn which takes the payload as the i/p parameter(HTTP Req text) 
+
+# : str and -> list are type hints telling us i/p string and o/p list
+
+
+
+
+TRAVERSAL.PY
+#A Traversal attack tricks the server into going outside that folder using ../ (which means "go up one folder" in Linux) to a real Linux file containing all system usernames. The attacker just read a file they were never supposed to access.
+
+# {2,} means repeat this 2 or more times so it catches the same pattern 2 or more times as well
+# \ is also a regex char so it needs escaping by adding a \, thus \\
+
+    r"(\.\./){2,}",             #detects the classical traversal pattern ../../
+    r"(\.\.\\){2,}",            #detects windows path using backslash ..\\
+    r"(?i)%2e%2e%2f",           #detects URL encoded version of ../, URL encoding : %2e -> . & %2f -> /
+    r"(?i)/etc/passwd",         #directly matches if someone is trying to access the Linux User accts file, no regex, if this appears defo attack
+    r"(?i)/etc/shadow",         #directly matches shadow which holds a hashed pwd(worse than pwd)
+    r"(?i)/windows/system32",   #detects attempt to acc windows sys folder - equi to attack on windows server
+
+
+
+
+
+XSS.PY
+#XSS is when an attacker injects malicious JavaScript into a webpage that other users then load in their browsers.
+
+# .*? means "any characters, any amounts", the ? makes it lazy, stopping at the first > it finds
+# on\w+ matches on flwed by an wrd characters, catching onerror, onclick, onmouseover, etc
+# \s*=\s* matches = with optional spaces around it
+# ['\"].*?['\"] matches anything inside quotes
+# . means any character in regex, so we avoid that using \ thus \. means actual dot
+
+    r"(?i)<script.*?>",                 #detects opening script tags like <script> or <script type = ...>
+    r"(?i)</script>",                   #detects closing script tags
+    r"(?i)on\w+\s*=\s*['\"].*?['\"]",   #detects event handler injections like onerror="alert(1)" or onclick="steal()"
+    r"(?i)javascript\s*:",              #detects javascript protocol injectns like href="javascript:alert(1)", a classic XSS vector in links
+    r"(?i)eval\s*\(",                   #detects eval calls, used to exec arbitrary JavaScript code
+    r"(?i)document\.cookie",            #detects attempts to steal cookies
+
+
+
+
+
+BRUTEFORCE.PY
+#Instead of regex patterns, it uses rate-based detection(counting requests over time)  
+#special dict that auto creates a deafult value for new keys, regular dict would throw error if key doesn't exist
+#defaultdict(list) auto creates a list for any new IPs added
+
+#a dict that maps each IP addr to a list of timestamps eg. "192.168.1.1": [1234567890.1, 1234567891.2, 1234567892.3], ""
+#The underscore _ at the start is a Python convention meaning "this is internal, don't touch it from outside this file."
+
+# list of common endpts to be monitored since diff websites use diff paths for their login pages
+
+#current t as a unix timestamp- a big float no rep seconds since Jan 1st 1970 to track attempts
+#sliding window(60s) list comprehension, older attempts r discarded

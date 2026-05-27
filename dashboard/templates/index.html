@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name = "viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Attack Analyzer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: monospace; background: #0d1117; color: #c9d1d9; padding: 2rem; }
+        h1 { color: #58a6ff; margin-bottom: 0.5rem; }
+        .subtitle { color: #8b949e; margin-bottom: 2rem; }
+        .stats { display: flex; gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem 2rem; text-align: center; }
+        .stat-number { font-size: 2rem; font-weight: bold; }
+        .stat-label { color: #8b994e; font-size: 0.85rem; }
+        .high { color: #f85149; }
+        .medium { color: #e3b341; }
+        .low { color: #58a6ff; }
+        table { width: 100%; border-collapse: collapse; background: #161b22; border-radius: 8px; overflow: hidden; }
+        th { background: #21262d; padding: 0.75rem 1rem; text-align: left; color: #8b949e; font-size: 0.85rem; text-transform: uppercase; }
+        td { padding: 0.75rem 1rem; border-top: 1px solid #30363d; font-size: 0.9rem; }
+        tr:hover { background: #1c2128; }
+        .badge { padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+        .badge.HIGH { background: #3d1f1f; color: #f85149; }
+        .badge.MEDIUM { background: #2d2208; color: #e3b341; }
+        .badge.LOW { background: #1f2d3d; color: #58a6ff; }
+        .empty { text-align: center; padding: 3rem; color: #8b949e; }
+    </style>
+</head>
+<body>
+    <h1> Web Attack Analyzer</h1>
+    <p class="subtitle"> Real-time Web attack detection dashboard</p>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-number" id="total">0</div>
+            <div class="stat-label">Total Alerts</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number high" id="high">0</div>
+            <div class="stat-label">High Severity</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number medium" id="medium">0</div>
+            <div class="stat-label">Medium Severity</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Severity</th>
+                <th>Attack Type</th>
+                <th>Source IP</th>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Match</th>
+            </tr>
+        </thead>
+        <tbody id="alerts-table">
+            <tr><td colspan="7" class="empty">Loading Alerts...</td></tr>
+        </tbody>
+    </table>
+
+    <script>
+        async function loadAlerts() {
+            const response = await fetch("/api/alerts");
+            const data = await response.json();
+
+            document.getElementById("total").textContent = data.total_alerts || 0;
+
+            const alerts = data.alerts || [];
+            const high = alerts.filter(a => a.severity === "HIGH").length;
+            const medium = alerts.filter(a => a.severity === "MEDIUM").length;
+            document.getElementById("high").textContent = high;
+            document.getElementById("medium").textContent = medium;
+            
+            const tbody = document.getElementById("alerts-table");
+            if (alerts.length === 0){
+                tbody.innerHTML = '<tr><td colspan="7" class="empty">No alerts found. Run a scan first.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = alerts.map(a => `
+                <tr>
+                    <td>${a.timestamp.split("T")[1].split(".")[0]}</td>
+                    <td><span class="badge ${a.severity}">${a.severity}</span></td>
+                    <td>${a.attack_type}</td>
+                    <td>${a.src_ip}</td>
+                    <td>${a.method}</td>
+                    <td>${a.path}</td>
+                    <td>${a.match}</td>
+                </tr>
+            `).join("");
+        }
+
+        loadAlerts();   
+        setInterval(loadAlerts, 5000);
+    </script>
+</body>
+</html>

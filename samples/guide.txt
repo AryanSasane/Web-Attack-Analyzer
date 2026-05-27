@@ -1,0 +1,21 @@
+GENERATE_TEST_PCAP.PY
+#import wrpcap(writes a list of pkts to .pcap file), IP(lets us create an IP layer for our pkt), TCP(lets us create a TCP layer), Raw(lets us attach raw data(our http req) to the pkt)
+
+make_http_packet fn
+#a helper fn that builds a fake but realistic http pkt
+#payload = .. -> builds a raw http req str manually, a real http req eg: GET /search?q=hello HTTP/1.1\r\n Host: testsite.com\r\n Content-Length: 0\r\n \r\n
+#the \r\n are the line endings, and the \r\n\r\n seperates the header from the body
+
+#pkt = (...) -> way scapy makes a pckt, flags="PA" means Push+Acknowledge, which is what data pkts use, Raw attaches our HTTP req as raw bytes, .encode() converts the str to bytes
+
+The Packets List:
+#6 attack packets and 2 normal packets
+
+#wrpcap -> writes all the packets to a .pcap file, this is the exact same format that wireshark uses, you could open this file in wireshark and see each pkt
+
+
+
+
+python samples/generate_test_pcap.py
+python main.py --pcap samples/test.pcap --report report.json
+cat report.json

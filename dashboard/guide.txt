@@ -1,0 +1,65 @@
+APP.PY
+#import 3 things from Flask :
+    Flask(the main appl class), render_template(renders an HTML file from templates/ folder), jsonify(converts a py dict into a JSON HTTP resp)
+
+create_app fn:
+#appl factory pattern - instead of creating flask app directly, wrap it in a fn. easier to test and config, we call create_app from main  when we want to start the dashboard
+#app=flask(...) -> creates the flask appl and __name__ tells flask whr to look for templates and static files, uses curr file loc as a ref point
+
+#@app.route("/") is a decorator - tells flask when someone visits this URL, call this fn
+    #routes are how Flask maps URLs to functions
+    #render_template looks for index.html in templates/ folder and sends it to the browser
+
+#@app.route("/api/alerts")
+    #when visit this URL, call get_alerts(), this is a REST API endpt that our dashboard's JS will call to fetch alert data
+    get_alerts fn:
+    #checks if report.json exists, if it does, reads it and returns the data as a JSON. If not, returns an empty response, thus dashboard works whether or not a scan has run yet
+    #return app returns the configured flask app so main.py can run it
+
+The Big Picture:
+browser visits localhost:5000 -> flask serves index.html -> browser loads the page -> JS in index.html calls /api/alerts -> Flask reads report.json and rets JSON -> JS displays alerts in the browsers
+
+
+
+INDEX.HTML
+Css Styling
+#background is a dark bgnd for the webpage
+#high, medium, low are color classes for severity levels
+#.badge -> small colored pill labels for severity, the .badge.HIGH, etc selectors combine two classes and only applies when an element has both classes
+
+HTML Structure
+#The stats rows:
+    three cards showing counts, the id attrs let JS find and update them.
+#The table:
+    a std HTML table, thead is the header row, tbody is whr the alerts rows go. The id="alerts_table" lets JS find the rows dynamically
+
+JavaScript
+#async fn loadAlert()
+    async means this fn runs asynchronously, can wait for things(like n/w reqs) w/o freezing the page
+#const response = await fetch... calls our Flask(/api/alerts) endpt and waits for response. fetch is the browsers built-in HTTP req fn, await pauses until the resp arrives
+#const data = await response.... converts the response from raw txt into a JS obj we can work with
+#doc.getElementById
+    finds the element with id="total" and updates its text, ||0 means "use 0 if the val is missing"
+
+#alerts.filter(a=>a.sevevrity === "HIGH").length
+    counts the HIGH severity alerts, filter returns a new array containing only items that match the condition, then length counts them
+
+#tbody.innerHTML = alerts.map(a => ....)
+    this code builds the table rows
+    alerts.map(a => ..) - loops through every alert and converts it into an HTML str
+    the backtick template literal lets us embed variables with ${}
+    .join("") combines all the HTML str into one big str
+    tbody.innerHTML = ... inserts that string into the table
+
+#a.timestamp.split("T")....
+    formats the timestamp, orginally it looks like : 2026-05-25T10:44:12.801811
+    .split("T") splits it into ["2026-05-25", "10:44:12.801811"]
+    [1] takes the time part "10:44:12.801811"
+    .split(".")[0] removes the milliseconds -> "10:44:12"
+
+#loadAlerts()
+    calls the fn once immediately when the page loads
+
+#setInterval(loadAlerts, 5000)
+    calls loadAlerts every 5000 milliseconds(5 secs) auto, thus dashboard auto refreshes, if you run a new scan, the dashboard updates w/o needing to reload the page
+    

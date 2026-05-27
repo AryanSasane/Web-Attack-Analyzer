@@ -1,0 +1,8 @@
+venv/
+__pycache__/
+*.pvc
+*.pvo
+.pytest_cache/
+report.json
+*.egg-info/
+.env

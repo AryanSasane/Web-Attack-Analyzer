@@ -1,0 +1,40 @@
+ALERT.PY
+#dataclass is a python decorator that auto gens boilerplate code for classes like __init__, thus don't have to write a long __init__ method setting every attacker
+#field let's us to customize how individual attr are initialized
+#python's datetime model module so we can timestamp each alert
+
+#decorator which sits above a class and tells Python to auto gen __init__ and other methods for this class based on the attr defined
+#defines a blueprint for an alert obj, every time we detect an attack, we create one of these
+#attributes
+#timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat()) -> 
+
+#self.__dict__ is a built-in Python attr that returns all the objs attrs as a dict, converting the Alert obj into a dict
+
+#prints the alert to the terminal in color
+#"\033[91m" are ANSI escape codes - spl char seq that terminals intrpret as colors 91m(red) 93m(yellow) 96m(cyan)
+#colors.get(self.severity, "") looks up the color for the alerts severity, the "" is a fallback if severity isn't HIGH/MEDIUM/LOW.
+#\033[0m resets the color back to normal after printing
+
+#formats and prints the alert in a readable manner
+#eg. [HIGH] 2026-05-23T10:30:00 | SQL Injection | 192.168.1.1:54321 -> 10.0.0.1:80 POST /login
+        Match: ' OR '1'='1
+
+
+
+
+REPORT.PY
+#import json is built-in Python lib for reading/writing JSON files
+#import Alert class for type hint in save_json
+
+#save_json fn takes a list of alerts and a file path, path has been given a default arg of report.json
+#[a.to_dict() for a in alerts] -> a list comprehension calling .to_dict() on all alerts bcuz JSON can't serialize Python onj directly, only plain dicts
+#with open(path, "w") as f: opens the file for writing, the with keyword auto closes the file when done or if error
+        "w" means write mode - creates the file if it doesn't exist, overwrites if it does
+        #dump writes the dict to the file as a formatted JSON, indent=2 makes it human-readable with 2 space indentation instead of 1 long line
+
+# def print fn 
+        Counter cnts occurrence of items
+        Counter(a.attack_type for a in alerts) -> Counts how many of each attack type were found
+        by_type.most_common() -> Returns attack types sorted by count, highest first
+        f"  {attack:<35} {count}" The :<35 is a format specifier -> left-aligns the txt and paids it 35 char wide, o/p lined neatly in a col 
+        

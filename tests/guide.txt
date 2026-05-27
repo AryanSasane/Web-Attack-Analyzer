@@ -1,0 +1,33 @@
+TEST_RULES.PY
+Big Picture:
+    curr rules r simple but more patterns might accidently break an existing one. Tests catch that immediately, when you run pytests, you will instantly know
+
+#sys and os are std Python libs, sys lets us modify python's module search path 
+sys.path.insert(....)
+    #when pytest runs TEST_RULES, it doesn't auto know where to find the rules pckg, this line manually tells where to look
+    __file__ - the path of the curr file
+    os.path.dirname(__file__) -> goes up one level in the path of the file 
+    os.path.dirname(...) -> goes up another level
+    sys.path.insert(0, ...) -> adds the proj root to Python's search path so "from rules import .." works correctly
+
+#here we don't test bruteforce here bcoz it's stateful(tracks IPs over time) which makes it trickier to unit test
+
+test_sqli_union() fn 
+    #every test is a fn that starts with test_ - pytest auto discovers n runs any fn with this prefix, no need to reg them anywhere
+    #assert - the core of every test, checks if a cond is true, if it is, it passes silently. If False, test fails and pytest shows exactly which assertn failed
+
+Three Types of Tests we write for each rule:
+#Positive Test(shld detect attacks)
+    != []   means the returned list is not empty(something was detected)
+#Another Positive Test(diff attack pattern)
+    != []
+#Negative Test(shld not detect anything, clean i/p)
+    == [] means the "returned list is empty", ie nothing was detected,coz we don't want our tool flagging normal traffic as attacks(false +ves)
+
+
+
+
+pytest tests/ -v 
+#runs the pytest framework we installed
+#tests/ tells pytest to look for tests inside the tests/ folder
+#-v stands for verbose to show each individual test or else o/p would just be ~9 tests passed

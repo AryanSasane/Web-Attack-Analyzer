@@ -1,0 +1,123 @@
+ANALYZER.PY - coordinator, it takes raw pckt, passes to each rule, collects all results, pckgs them into proper Alert objs, returns the full list
+#import all rule files from package rule
+
+analyze_request fn
+#takes a dict containing parsed HTTP request data and returns a list of alerts
+#dict eg: {"src_ip": "192.168.1.1","dst_ip": "10.0.0.1","src_port": 54321,"dst_port": 80,"method": "POST","path": "/login","raw_payload": "POST /login HTTP/1.1...",}
+# adding "" is a default if the key doesn't exist, preventing a crash
+rule_results
+#runs all four detection fns and combines their results into 1 list using +, if SQLi found 2 alerts and XSS found 1, there will be a total a 3 items
+for r in rule_results
+#loop runs through every detection item and converts into a proper Alert Object
+#append creates an Alert object for each detection result, filling all the fields. Rule gives us type, severity, match, payload_snippet and pkt metadata gives us src_ip, dst_ip, ports, method, path
+
+
+
+
+PCAP_READER.PY
+#pcap file contains 1000s or raw pckts - TCP handshakes, DHCP lookups, HTTP reqs, encrypted traffic, etc. This files job is to extract only http req, ret them in a clean format that ANALYZER can work with
+#import specific components from scapy
+    rdpcap - reads a .pcap file and rets a list of pckts
+    TCP - rep the TCP layer of the pkt
+    IP - rep the IP layer of the pkt
+    Raw - rep the raw payload (actual data) of a pkt
+
+parse_http_from_packet fn
+#takes a single pkt and rets either a dict of http req data or none if the pkt isnt a http req
+
+#dict | None means either "either return dict or none"
+
+#if not(1st filter) -> packet doesn't have both TCP layer and RAW pyload, these can't be HTTP req, we can ignore and return none
+#raw = ... -> extracts raw payload bytes from the pkt and decodes them as UTF-8 text. errors="replace" means if there r bytes that cant be decoded, replace them with a placeholder instead of crashing
+#if not raw (2nd filter) -> http req always start with a method name, if the payload doesn't start with one of these, its not an http req(could be https, tcp or ssh traffic) so we skip it
+#lines = raw ... -> splits the raw HTTP req into lines, http uses \r\n(carriage reutn + new line) as line endings for eg:
+    POST /login HTTP/1.1\r\n
+    Host: example.com\r\n
+    Content-Type: application/x-www-form-urlencoded\r\n
+    \r\n
+    username=admin&password=1234
+#first_line ... -> splits the first line by spaces, the first line of http req always looks like : POST /login HTTP/1.1 thus first line = ["POST", "/login", "HTTP/1.1"]
+#method = .. & post = ... -> extracts the method and path from the first line 
+#body_start = ... -> in http, the headers and bosy is a sep by a blank line (\r\n\r\n) finds that seperator 
+#body = raw... -> extracts everything after the blank line as the req body, +4 skips past the /r/n/r/n and if no blank line is fnd then ret -1
+
+The return dictionary
+#pckges everything into the dict format that ANALYZER.PY expects
+
+read_pcap fn
+#the main fn reads an entire .pcap file and rets a list of the parsed HTTP req dictionaries 
+
+
+
+
+
+CAPTURE.PY
+#PCAP_READER(file on disk, loop through pckts manually, testing forensics, doesnt need sudo) and CAPTURE() 
+#do the same job diffly 
+#both feed the ANALYZER file
+
+#sniff fn captures live n/w pckets in real time
+#_all_alerts is a module-level list that accumulates all alerts fnd during the capture sesh, _ prefix means it's internal to this fiele
+
+_pckt_callback fn
+#callback function
+#instead of looping manually, scapy loops internally and calls our fn auto for each pkt it sees
+#like doorbell, we only wait for the doorbell, not stand by the door when someone arrives
+#try to parse the pkt as http, if its http then run it thru the analyzer, print-store any alerts found
+
+start_capture fn
+#main fn to start the live capture
+#interface - which n/w interface to listen on(eg eth0), None means use the default
+#port - which port to monitor, default to 80(std HTTP)
+#count - how many pkts to capture, 0 means capture forever until ctrl+callback
+#filter_str = ... -> a BPF(BERKELY PACKET Filter) - a mini lang for filter n/w traffic, "tcp port 80" tells Scapy to only capt TCP pckts on port 80, ignoring everythin else(DNS, IMCP, etc), same filter WireShark uses
+#sniff(...) -> the actual capture call
+    iface(n/w interface to listen on), filter(BPF filter str), prn(the callback fn to call for each pckt, prn is for print fn but can be any type of fn), count(how many pckts to capture), store=False(dont store pkts in mem, we proc and discard them via the callback), saves RAM during long captures
+
+
+
+
+
+MAIN.PY
+#argparse is Pythons built-in library for building cmd line interfaces, lets us acc args like --pcap, --live, etc. when running the script from the terminal
+
+#parser=... -> creates a new arg parser, the desc shows up when the user runs "python main.py --help"
+
+The Arguments:
+#each line defines 1 cmd line arg
+#--pcap expects a file path str after it
+#--live action="store_true", means its a flag, no value needed. if present args.live is store_true, otherwise false
+#--iface optional, defaults to none
+#--port  type=int converts the i/p to an int, defaults to 80
+#--report optional file path to save the report
+#so the user can run:
+    python main.py --pcap test.pcap --report report.json
+    python main.py --live --port 8080 --iface eth0
+#args=parser... -> parses the users i/p from terminal and stores it in args
+    thus, args.pcap(contains file path), args.live(T/F), etc.
+
+#alerts -> empty list that will collect all alerts reagardless of which mode we run in
+
+#if args.pcap: -> if user passed a --pcap arg, run in pcap mode
+    extend is like append but adds all items from a list instead of one item, if analyze_request returns 3 alerts, extend adds all 3 alerts at once, append would add the list as a single item itself
+
+#elif args.live: -> if user passed --live arg, run in live capture mode. we pass the i/f and port from the args
+
+#else: parser.print_help -> if user ran python main.py with no args, print the help msg showing them how to use the tool
+
+#if __name__ == "__main__": main()
+    python convention meaning only run main() if the file is being run directly, not if it's being imported by another file
+    for eg, if another file does "from main import something", we don't want main to be executed auto, this guard prevents that
+
+The Big Picture:
+User runs: python main.py --pcap test.pcap
+                ↓
+           main.py parses arguments
+                ↓
+           read_pcap() extracts HTTP requests
+                ↓
+           analyze_request() runs all rules
+                ↓
+           print_summary() shows results
+                ↓
+           save_json() saves report (if --report passed)
