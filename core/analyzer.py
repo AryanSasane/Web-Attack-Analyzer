@@ -1,9 +1,10 @@
 from rules import sqli, xss, traversal, bruteforce
 from utils.alert import Alert
+from urllib.parse import unquote_plus
 
 def analyze_request(pkt_meta: dict) -> list:
     alerts = []
-    full_payload = pkt_meta.get("raw_payload", "")
+    full_payload = unquote_plus(pkt_meta.get("raw_payload", ""))
     src_ip = pkt_meta.get("src_ip", "")
     method = pkt_meta.get("method", "")
     path = pkt_meta.get("path", "")

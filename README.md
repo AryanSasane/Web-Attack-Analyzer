@@ -44,3 +44,11 @@ python main.py --dashboard
 
 ## Tech Stack
 Python, Scapy, Flask, pytest
+
+## System Dependencies
+Required for live packet capture.
+```bash
+sudo apt install libpcap-dev tcpdump -y
+```
+- `libpcap-dev` — required for live packet capture with Scapy
+- `tcpdump` — required for capturing attack traffic to pcap files
